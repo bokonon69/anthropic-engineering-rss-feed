@@ -1,8 +1,10 @@
 import asyncio
 from datetime import datetime, timezone
 from feedgen.feed import FeedGenerator
+import html
 from playwright.async_api import async_playwright
 import re
+import urllib.request
 from urllib.parse import urljoin, urlparse
 from dateutil import parser as date_parser
 
@@ -38,6 +40,47 @@ class AnthropicRSSGenerator:
         title = text[:match.start()].strip(" -–—")
         return title, match.group(0)
 
+    def extract_meta_content(self, html_content, field_names):
+        for field_name in field_names:
+            patterns = [
+                rf'<meta[^>]+(?:name|property)=["\']{re.escape(field_name)}["\'][^>]+content=["\']([^"\']+)["\']',
+                rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:name|property)=["\']{re.escape(field_name)}["\']',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, html_content, re.IGNORECASE)
+                if match:
+                    return self.normalize_text(html.unescape(match.group(1)))
+        return None
+
+    def fetch_article_details_sync(self, url):
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; AnthropicEngineeringRSS/1.0)",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            html_content = response.read().decode("utf-8", "replace")
+
+        date_match = re.search(
+            r"Published\s*(?:<!--\s*-->)?\s*(" + self.DATE_PATTERN.pattern + r")",
+            html_content,
+            re.IGNORECASE,
+        )
+        date_text = date_match.group(1) if date_match else None
+        description = self.extract_meta_content(
+            html_content,
+            ["description", "og:description", "twitter:description"],
+        )
+        return date_text, description
+
+    async def fetch_article_details(self, url):
+        try:
+            return await asyncio.to_thread(self.fetch_article_details_sync, url)
+        except Exception as e:
+            print(f"Error fetching article details for {url}: {e}")
+            return None, None
+
     def parse_date(self, date_text):
         """Parse date text and return a datetime object with timezone"""
         try:
@@ -67,7 +110,10 @@ class AnthropicRSSGenerator:
             anchors = await page.locator("a[href*='/engineering/']").evaluate_all(
                 """links => links.map(link => ({
                     href: link.href,
-                    text: link.innerText || link.textContent || ""
+                    text: link.innerText || link.textContent || "",
+                    title: (link.querySelector("h1, h2, h3")?.innerText || "").trim(),
+                    date: (link.querySelector("[class*='date']")?.innerText || "").trim(),
+                    summary: (link.querySelector("p")?.innerText || "").trim()
                 }))"""
             )
 
@@ -80,8 +126,27 @@ class AnthropicRSSGenerator:
                     if url in seen_urls or not self.is_engineering_post_url(url):
                         continue
 
-                    title, date_text = self.parse_anchor_text(anchor["text"])
+                    title = self.normalize_text(anchor.get("title"))
+                    date_text = self.normalize_text(anchor.get("date"))
+                    description = self.normalize_text(anchor.get("summary"))
+
                     if not title or not date_text:
+                        parsed_title, parsed_date_text = self.parse_anchor_text(anchor["text"])
+                        title = title or parsed_title
+                        date_text = date_text or parsed_date_text
+
+                    if not title:
+                        continue
+
+                    if not date_text:
+                        detail_date_text, detail_description = await self.fetch_article_details(url)
+                        date_text = detail_date_text
+                        description = description or detail_description
+
+                    description = description or title
+
+                    if not date_text:
+                        print(f"Skipping article without publication date: {title}")
                         continue
 
                     parsed_date = self.parse_date(date_text)
@@ -90,7 +155,8 @@ class AnthropicRSSGenerator:
                         'title': title,
                         'url': url,
                         'date': parsed_date,
-                        'date_text': date_text
+                        'date_text': date_text,
+                        'description': description
                     })
                     
                     print(f"Found: {title} - {date_text}")
@@ -130,7 +196,7 @@ class AnthropicRSSGenerator:
             entry.title(article_data['title'])
             entry.link(href=article_data['url'])
             entry.pubDate(article_data['date'])
-            entry.description(article_data['title'])
+            entry.description(article_data['description'])
             
             # Add GUID for better interoperability (using the URL as GUID)
             entry.guid(article_data['url'], permalink=True)
