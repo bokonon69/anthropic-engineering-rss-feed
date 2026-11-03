@@ -8,6 +8,9 @@ on:
   push:
     branches: [ main ]
 
+concurrency:
+  group: generate-anthropic-rss
+  cancel-in-progress: false
 
 jobs:
   generate-rss:
@@ -33,9 +36,21 @@ jobs:
       run: |
         pip install -r requirements.txt
         playwright install chromium
+
+    - name: Test RSS generator
+      run: python -m unittest discover -s tests -v
         
     - name: Generate RSS feed
       run: python anthropic_rss.py
+
+    - name: Upload page diagnostics on failure
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: engineering-page-diagnostics
+        path: diagnostics/
+        if-no-files-found: ignore
+        retention-days: 7
       
     - name: Commit and push RSS feed
       run: |
