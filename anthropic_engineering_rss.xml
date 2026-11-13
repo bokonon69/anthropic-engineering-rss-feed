@@ -8,7 +8,14 @@
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>python-feedgen</generator>
     <language>en</language>
-    <lastBuildDate>Fri, 13 Nov 2026 15:13:14 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 13 Nov 2026 21:51:17 +0000</lastBuildDate>
+    <item>
+      <title>Building strong safety evaluations</title>
+      <link>https://www.anthropic.com/research/building-strong-safety-evaluations</link>
+      <description>Building strong safety evaluations</description>
+      <guid isPermaLink="true">https://www.anthropic.com/research/building-strong-safety-evaluations</guid>
+      <pubDate>Fri, 13 Nov 2026 00:00:00 +0000</pubDate>
+    </item>
     <item>
       <title>The components of agent memory</title>
       <link>https://www.anthropic.com/research/components-of-agent-memory</link>
