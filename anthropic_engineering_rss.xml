@@ -8,7 +8,14 @@
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>python-feedgen</generator>
     <language>en</language>
-    <lastBuildDate>Wed, 25 Nov 2026 12:22:48 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 25 Nov 2026 22:15:17 +0000</lastBuildDate>
+    <item>
+      <title>Migrating our Messages API to Rust</title>
+      <link>https://www.anthropic.com/research/migrating-api-to-rust</link>
+      <description>Migrating our Messages API to Rust</description>
+      <guid isPermaLink="true">https://www.anthropic.com/research/migrating-api-to-rust</guid>
+      <pubDate>Wed, 25 Nov 2026 00:00:00 +0000</pubDate>
+    </item>
     <item>
       <title>Building strong safety evaluations</title>
       <link>https://www.anthropic.com/research/building-strong-safety-evaluations</link>
