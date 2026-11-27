@@ -8,7 +8,7 @@
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>python-feedgen</generator>
     <language>en</language>
-    <lastBuildDate>Thu, 26 Nov 2026 23:36:15 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 27 Nov 2026 07:39:41 +0000</lastBuildDate>
     <item>
       <title>Migrating our Messages API to Rust</title>
       <link>https://www.anthropic.com/research/migrating-api-to-rust</link>
